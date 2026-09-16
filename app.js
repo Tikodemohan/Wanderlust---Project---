@@ -1,3 +1,5 @@
+
+
 if (process.env.NODE_ENV != "production") {
     require('dotenv').config();
 }
@@ -20,6 +22,7 @@ const User = require("./models/user.js");
 const userRouter = require("./routes/user.js");
 
 const dbUrl = process.env.ATLASDB_URL;
+
 main()
     .then(() => {
         console.log("Connected to DB");
@@ -34,9 +37,10 @@ async function main() {
 app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
-app.use(express.static(path.join(__dirname, "/public")))
+app.use(express.static(path.join(__dirname, "/public")));
 
 // Session store config
 const store = MongoStore.create({
@@ -46,6 +50,7 @@ const store = MongoStore.create({
     },
     touchAfter: 24 * 3600,
 });
+
 store.on("error", () => {
     console.log("ERROR in MONGO SESSION STORE");
 });
@@ -68,11 +73,12 @@ app.use(flash());
 // Passport config
 app.use(passport.initialize());
 app.use(passport.session());
+
 passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-// Flash & current user middleware — only once
+// Flash & current user middleware
 app.use((req, res, next) => {
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
@@ -96,7 +102,12 @@ app.use((err, req, res, next) => {
     res.status(statusCode).render("listings/error.ejs", { message });
 });
 
-// Server start
-app.listen(8080, () => {
-    console.log("App is listening on port 8080");
-});
+// Server start - local only
+if (process.env.NODE_ENV !== "production") {
+    app.listen(8080, () => {
+        console.log("App is listening on port 8080");
+    });
+}
+
+// Export app for Vercel
+module.exports = app;
